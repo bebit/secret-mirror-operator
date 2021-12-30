@@ -88,6 +88,56 @@ var _ = Describe("SecretMirror controller", func() {
 			return toSecret.Data
 		}, timeout, interval).Should(Equal(map[string][]byte{"foo": []byte("bar")}))
 	})
+
+	It("should delete toSecret in dst namespace", func() {
+		By("Creating SecretMirror")
+		secretMirror := newSecretMirror(secretName, dstNamespace)
+		Expect(k8sClient.Create(ctx, secretMirror, &client.CreateOptions{})).Should(Succeed())
+
+		// Secret should be created
+		toSecret := v1.Secret{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, &toSecret)
+		}, timeout, interval).Should(Succeed())
+
+		By("Deleting Secret in src namespace")
+		fromSecret := v1.Secret{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: srcNamespace, Name: secretName}, &fromSecret)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, &fromSecret, &client.DeleteOptions{})).Should(Succeed())
+
+		By("Triggering reconcile loop") // TODO: Enable to trigger reconciliation loop when fromSecret is updated.
+		toSecret.Annotations = map[string]string{"string": "string"}
+		Expect(k8sClient.Update(ctx, &toSecret, &client.UpdateOptions{})).Should(Succeed())
+
+		// toSecret is deleted as fromSecret is deleted
+		toSecret = v1.Secret{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, &toSecret)
+		}, timeout, interval).ShouldNot(Succeed())
+	})
+
+	It("should not delete Secret in dst namespace", func() {
+		When("Secret already exists in dst namespace", func() {
+			secret := newTestSecret(secretName, dstNamespace)
+			Expect(k8sClient.Create(ctx, secret, &client.CreateOptions{})).Should(Succeed())
+		})
+		By("Creating SecretMirror")
+		secretMirror := newSecretMirror(secretName, dstNamespace)
+		Expect(k8sClient.Create(ctx, secretMirror, &client.CreateOptions{})).Should(Succeed())
+
+		By("Deleting Secret in src namespace")
+		fromSecret := v1.Secret{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: srcNamespace, Name: secretName}, &fromSecret)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, &fromSecret, &client.DeleteOptions{})).Should(Succeed())
+
+		By("Triggering reconcile loop") // TODO: Enable to trigger reconciliation loop when fromSecret is updated.
+		secretMirror.Annotations = map[string]string{"string": "string"}
+		Expect(k8sClient.Update(ctx, secretMirror, &client.UpdateOptions{})).Should(Succeed())
+
+		secret := v1.Secret{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, &secret)).Should(Succeed())
+		Expect(secret.ObjectMeta.OwnerReferences).To(BeEmpty()) // Not managed by SecretMirror
+	})
 })
 
 func newTestSecret(name, namespace string) *v1.Secret {

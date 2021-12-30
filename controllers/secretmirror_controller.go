@@ -78,12 +78,16 @@ func (r *SecretMirrorReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				log.Error(err, "[toSecret] Failed to get")
 				return ctrl.Result{}, err
 			}
+			if !metav1.IsControlledBy(toSecret, secretMirror) {
+				log.Error(err, "[toSecret] Not controlled by SecretMirror")
+				return ctrl.Result{}, nil
+			}
 			err := r.Delete(ctx, toSecret, &client.DeleteOptions{})
 			if err != nil {
-				log.Error(err, "[fromSecret] Failed to delete")
+				log.Error(err, "[toSecret] Failed to delete")
 				return ctrl.Result{}, err
 			}
-			log.Info(fmt.Sprintf("[fromSecret] Not found in %s", secretMirror.Spec.FromNamespace))
+			log.Info(fmt.Sprintf("[fromSecret] Not found in %s and deleted toSecret in %s", secretMirror.Spec.FromNamespace, secretMirror.Namespace))
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, fmt.Sprintf("[fromSecret] Failed to fetch from %s", secretMirror.Spec.FromNamespace))
