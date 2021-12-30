@@ -105,10 +105,6 @@ var _ = Describe("SecretMirror controller", func() {
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: srcNamespace, Name: secretName}, &fromSecret)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, &fromSecret, &client.DeleteOptions{})).Should(Succeed())
 
-		By("Triggering reconcile loop") // TODO: Enable to trigger reconciliation loop when fromSecret is updated.
-		toSecret.Annotations = map[string]string{"string": "string"}
-		Expect(k8sClient.Update(ctx, &toSecret, &client.UpdateOptions{})).Should(Succeed())
-
 		// toSecret is deleted as fromSecret is deleted
 		toSecret = v1.Secret{}
 		Eventually(func() error {
@@ -129,10 +125,6 @@ var _ = Describe("SecretMirror controller", func() {
 		fromSecret := v1.Secret{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: srcNamespace, Name: secretName}, &fromSecret)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, &fromSecret, &client.DeleteOptions{})).Should(Succeed())
-
-		By("Triggering reconcile loop") // TODO: Enable to trigger reconciliation loop when fromSecret is updated.
-		secretMirror.Annotations = map[string]string{"string": "string"}
-		Expect(k8sClient.Update(ctx, secretMirror, &client.UpdateOptions{})).Should(Succeed())
 
 		secret := v1.Secret{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, &secret)).Should(Succeed())
