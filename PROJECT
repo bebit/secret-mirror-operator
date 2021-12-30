@@ -3,4 +3,14 @@ layout:
 - go.kubebuilder.io/v3
 projectName: secret-mirror-operator
 repo: github.com/bebit/secret-mirror-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: bebit.com
+  group: secret
+  kind: SecretMirror
+  path: github.com/bebit/secret-mirror-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
