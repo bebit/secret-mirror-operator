@@ -23,12 +23,16 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	secretv1alpha1 "github.com/bebit/secret-mirror-operator/api/v1alpha1"
 )
@@ -141,6 +145,29 @@ func (r *SecretMirrorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&secretv1alpha1.SecretMirror{}).
 		Owns(&v1.Secret{}).
+		Watches(
+			&source.Kind{Type: &v1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
+				secretMirrorList := &secretv1alpha1.SecretMirrorList{}
+				ctx := context.Background()
+				ctx, cancel := context.WithCancel(ctx)
+				defer cancel()
+				mgr.GetCache().List(ctx, secretMirrorList)
+				requests := []reconcile.Request{}
+				for _, item := range secretMirrorList.Items {
+					if item.Spec.FromNamespace == a.GetNamespace() && item.Name == a.GetName() {
+						requests = append(requests,
+							reconcile.Request{
+								NamespacedName: types.NamespacedName{
+									Name:      item.Name,
+									Namespace: item.Namespace,
+								},
+							})
+					}
+				}
+				return requests
+			}),
+		).
 		Complete(r)
 }
 

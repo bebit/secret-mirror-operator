@@ -65,6 +65,9 @@ This kubebuilder-based Kubernetes operator copies a `Secret` to another namespac
       uid: 81452942-2562-4f14-be8b-e4c3c856cae6
     type: Opaque
     ```
+
+## Behaviors
+
 1. Change `Secret` in `dst` Namespace manually.
 
     ```
@@ -77,34 +80,43 @@ This kubebuilder-based Kubernetes operator copies a `Secret` to another namespac
     kubectl get secret secret -n dst -o jsonpath='{.data}'
     {"foo":"YmFy"}
     ```
-
-## Notice
-
-When the orginial `Secret` is updated or deleted, the controller is not triggered. For now, we need to update the `SecretMirror` (e.g. annotation)
-
-1. Apply samples.
-    ```
-    kubectl apply -f config/samples
-    ```
-1. Change `Secret` in `src` Namespace. (ToDo: not implemented)
+1. Change `Secret` in `src` Namespace manually.
     ```
     kubectl patch secret secret -p "{\"data\":{\"srcSecret\": \"$(echo updated | base64 -)\"}}" -n src
     ```
-
-    The data in `Secret` in `dst` Namespace is still old.
-
-    ```
-    kubectl get secret secret -n dst -o jsonpath='{.data}'
-    {"foo":"YmFy"}%
-    ```
-1. Update `SecretMirror` by adding annotation.
-    ```
-    kubectl annotate secretmirror secret description='secret is updated' -n dst
-    ```
-
-    The data is updated by the controller.
-
+    The controller keeps the Secret same as the original `Secret`.
     ```
     kubectl get secret secret -n dst -o jsonpath='{.data}'
     {"foo":"YmFy","srcSecret":"dXBkYXRlZAo="}
+    ```
+1. Delete `Secret` in `dst` Namespace.
+    ```
+    kubectl delete sercet dst -n dst
+    ```
+    The controller recreates the Secret.
+    ```
+    kubectl get secret secret -n dst -o jsonpath='{.data}'
+    {"foo":"YmFy","srcSecret":"dXBkYXRlZAo="}
+    ```
+1. Delete `Secret` in `src` Namespace.
+    ```
+    kubectl delete secret secret -n src
+    ```
+
+    The controller deletes the Secret in `dst` Namespace.
+
+    ```
+    kubectl get secret -n dst
+    NAME                  TYPE                                  DATA   AGE
+    default-token-wwsmc   kubernetes.io/service-account-token   3      2m19s
+    ```
+1. Recreate `Secret` in `src` Namespace.
+    ```
+    kubectl apply -f config/samples/secret.yaml
+    ```
+
+    The controller creates a new Secret in `dst` Namespace.
+    ```
+    kubectl get secret secret -n dst -o jsonpath='{.data}'
+    {"foo":"YmFy"}
     ```
