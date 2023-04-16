@@ -3,14 +3,14 @@ package controllers
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	secretv1alpha1 "github.com/bebit/secret-mirror-operator/api/v1alpha1"
+	secretv1alpha1 "github.com/nakamasato/secret-mirror-operator/api/v1alpha1"
 )
 
 const (
@@ -55,7 +55,7 @@ var _ = Describe("SecretMirror controller", func() {
 		boolTrue := true
 		expectedOwnerReference := metav1.OwnerReference{
 			Kind:               "SecretMirror",
-			APIVersion:         "secret.bebit.com/v1alpha1",
+			APIVersion:         "secret.nakamasato.com/v1alpha1",
 			UID:                secretMirror.UID,
 			Name:               secretName,
 			Controller:         &boolTrue,
@@ -113,10 +113,10 @@ var _ = Describe("SecretMirror controller", func() {
 	})
 
 	It("should not delete Secret in dst namespace", func() {
-		When("Secret already exists in dst namespace", func() {
-			secret := newTestSecret(secretName, dstNamespace)
-			Expect(k8sClient.Create(ctx, secret, &client.CreateOptions{})).Should(Succeed())
-		})
+		By("Secret already exists in dst namespace")
+		secret := newTestSecret(secretName, dstNamespace)
+		Expect(k8sClient.Create(ctx, secret, &client.CreateOptions{})).Should(Succeed())
+
 		By("Creating SecretMirror")
 		secretMirror := newSecretMirror(secretName, dstNamespace)
 		Expect(k8sClient.Create(ctx, secretMirror, &client.CreateOptions{})).Should(Succeed())
@@ -126,8 +126,8 @@ var _ = Describe("SecretMirror controller", func() {
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: srcNamespace, Name: secretName}, &fromSecret)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, &fromSecret, &client.DeleteOptions{})).Should(Succeed())
 
-		secret := v1.Secret{}
-		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, &secret)).Should(Succeed())
+		secret = &v1.Secret{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: dstNamespace, Name: secretName}, secret)).Should(Succeed())
 		Expect(secret.ObjectMeta.OwnerReferences).To(BeEmpty()) // Not managed by SecretMirror
 	})
 })

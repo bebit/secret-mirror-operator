@@ -1,4 +1,3 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -17,7 +16,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - secret.bebit.com
+  - secret.nakamasato.com
   resources:
   - secretmirrors
   verbs:
@@ -29,13 +28,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - secret.bebit.com
+  - secret.nakamasato.com
   resources:
   - secretmirrors/finalizers
   verbs:
   - update
 - apiGroups:
-  - secret.bebit.com
+  - secret.nakamasato.com
   resources:
   - secretmirrors/status
   verbs:

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 nakamasato.
+Copyright 2023.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the secret v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=secret.bebit.com
+// +kubebuilder:object:generate=true
+// +groupName=secret.nakamasato.com
 package v1alpha1
 
 import (
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "secret.bebit.com", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: "secret.nakamasato.com", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
